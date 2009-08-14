@@ -1,0 +1,90 @@
+#!/bin/bash
+set -uo pipefail
+# shellcheck enable=all
+# vim: filetype=bash
+#
+# A bash script template.
+
+# https://github.com/robin-crampton/bash-scripts-lib
+export PROGRAM_VERSION="1.0.0"
+export PROGRAM_SUPPORT="\
+Report bugs to <bugs@example.com>"
+export PROGRAM_ATTRIBUTION="\
+Written by Author Example <author@example.org>"
+export PROGRAM_PACKAGE="example package"
+# shellcheck source=/dev/null
+{ test -n "${BASH_SCRIPTS_LIB_PATH:-}" && test -r "$_" && source "$_"; } \
+  || { test -n "${XDG_DATA_HOME:-}" && test -r "$_/bash-scripts-lib/lib.sh" \
+         && source "$_"; } \
+  || { test -r "/usr/local/share/bash-scripts-lib/lib.sh" && source "$_"; } \
+  || { printf '%s\n' "$0: ERROR: Missing dependency: bash-scripts-lib" >&2
+       exit 1; }
+
+main() {
+  local usage
+  lib::set_variable_from_heredoc usage <<!
+Usage: ${PROGRAM_NAME} [OPTION]... EXAMPLE
+
+A bash script template.
+
+  -v, --verbose   print more information about progress (cumulative)
+      --help      display this help and exit
+      --version   output version information and exit
+
+${PROGRAM_SUPPORT}
+!
+  readonly usage
+
+  # Parse the command line.
+  local options
+  options="$(lib::get_options \
+    "v" \
+    "verbose,help,version" \
+    "$@")" \
+    || exit 2
+  readonly options
+  eval set -- "${options}"
+  while true; do
+    case "$1" in
+      -v|--verbose)
+        shift
+        export VERBOSITY="$((${VERBOSITY:-0} + 1))"
+        ;;
+      --help)
+        lib::usage_help_exit "${usage}"
+        ;;
+      --version)
+        lib::version_exit
+        ;;
+      --)
+        break
+        ;;
+      *)
+        lib::usage_error_exit
+    esac
+  done
+  shift
+
+  # Check the arguments.
+  (($# >= 1)) \
+    || lib::usage_error_help_exit "Too few arguments." "${usage}"
+  (($# <= 1)) \
+    || lib::usage_error_exit "Too many arguments."
+
+  # Check for dependencies.
+  lib::assert_installed \
+    ls
+  lib::assert_variable_nonempty \
+    PATH
+
+  # Do the work.
+  lib::trace "Example trace message."
+  lib::debug "Example debug message."
+  lib::info "Example informative message."
+  #lib::warn "Example warning message."
+  #lib::error "Example error message."
+
+  lib::info "Done."
+}
+
+main "$@"
